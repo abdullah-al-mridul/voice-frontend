@@ -1,0 +1,46 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "Happy people connecting",
+      "imageUrl": "https://images.unsplash.com/photo-1568492650629-3dfa9b007cbf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZW9wbGUlMjBjb25uZWN0aW5nfGVufDB8fHx8MTc3MTIyNjUyNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "people connecting"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "Profile picture 1",
+      "imageUrl": "https://images.unsplash.com/photo-1588802669875-5b4bff3d0438?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NzExODk4MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "Profile picture 2",
+      "imageUrl": "https://images.unsplash.com/photo-1681218034100-801ebcbc0221?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NzExODk4MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "Profile picture 3",
+      "imageUrl": "https://images.unsplash.com/photo-1681218034100-801ebcbc0221?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NzExODk4MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "post-image-1",
+      "description": "Beautiful landscape",
+      "imageUrl": "https://images.unsplash.com/photo-1610552050890-fe99536c2615?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxuYXR1cmUlMjBsYW5kc2NhcGV8ZW58MHx8fHwxNzcxMTc1MjY0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "nature landscape"
+    },
+    {
+      "id": "post-image-2",
+      "description": "Urban city view",
+      "imageUrl": "https://images.unsplash.com/photo-1541423408854-5df732b6f6d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjaXR5JTIwc2t5bGluZXxlbnwwfHx8fDE3NzEyMjUyMTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "city skyline"
+    },
+    {
+      "id": "profile-cover",
+      "description": "Profile cover photo",
+      "imageUrl": "https://images.unsplash.com/photo-1663970206579-c157cba7edda?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzcxMjA2OTY3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract background"
+    }
+  ]
+}
