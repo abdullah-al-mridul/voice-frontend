@@ -15,10 +15,11 @@ export default function HomePage() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Split posts into two lists for the columns
-  const midPoint = Math.ceil(dummyPosts.length / 2);
-  const leftColumnPosts = dummyPosts.slice(0, midPoint);
-  const rightColumnPosts = dummyPosts.slice(midPoint);
+  // Only use a subset for landing page to keep it smooth and speed consistent
+  const landingPosts = dummyPosts.slice(0, 20);
+  const midPoint = Math.ceil(landingPosts.length / 2);
+  const leftColumnPosts = landingPosts.slice(0, midPoint);
+  const rightColumnPosts = landingPosts.slice(midPoint);
 
   // Triple the items to ensure a perfectly seamless loop even on tall screens
   const leftScrollerPosts = [...leftColumnPosts, ...leftColumnPosts, ...leftColumnPosts];
@@ -45,7 +46,10 @@ export default function HomePage() {
     localStorage.setItem('voice_user', JSON.stringify({
       name: 'John Doe',
       handle: '@johndoe',
-      avatar: 'https://picsum.photos/seed/me/100/100'
+      avatar: 'https://picsum.photos/seed/me/100/100',
+      bio: 'Creator & Maintainer of VOICE. Building the future of digital connection.',
+      location: 'San Francisco, CA',
+      website: 'voice.app/johndoe'
     }));
     router.push('/feed');
   };

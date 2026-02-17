@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -17,30 +17,123 @@ import {
   Link as LinkIcon,
   Search,
   Settings,
-  Menu
+  Menu,
+  Camera,
+  X,
+  BadgeCheck
 } from 'lucide-react';
 import { dummyPosts, trendingTopics, followSuggestions, appState } from '@/lib/dummy-data';
 import { SidebarLink } from '@/app/feed/page';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const ScallopedBadge = ({ className, color = "#5A55F2" }: { className?: string; color?: string }) => (
+  <svg viewBox="0 0 24 24" aria-label="Verified account" className={className}>
+    <g>
+      <path 
+        d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.28 2.52-.81 3.91c-1.31.67-2.19 1.91-2.19 3.34s.88 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.27 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z" 
+        fill={color}
+      />
+      <path 
+        d="M10.54 16.2l-3.53-3.53 1.06-1.06 2.47 2.47 6.13-6.13 1.06 1.06-7.19 7.19z" 
+        fill="white"
+      />
+    </g>
+  </svg>
+);
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; handle: string; avatar: string } | null>(null);
+  const { toast } = useToast();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  const [user, setUser] = useState<{ name: string; handle: string; avatar: string; cover?: string; bio?: string; location?: string; website?: string } | null>(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [isLoading, setIsLoading] = useState(!appState.hasInitialLoaded);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Form states for editing
+  const [editName, setEditName] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
+  const [editCover, setEditCover] = useState('');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('voice_user');
     if (!savedUser) {
       router.push('/');
     } else {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      setEditName(parsedUser.name || '');
+      setEditBio(parsedUser.bio || 'Digital product designer, tech enthusiast, and professional VOICEr. Building the future of social connection. 🚀');
+      setEditLocation(parsedUser.location || 'San Francisco, CA');
+      setEditWebsite(parsedUser.website || 'voice.app/me');
+      setEditAvatar(parsedUser.avatar || '');
+      setEditCover(parsedUser.cover || PlaceHolderImages.find(img => img.id === 'profile-cover')?.imageUrl || "https://picsum.photos/seed/cover/800/260");
       appState.hasInitialLoaded = true;
       setIsLoading(false);
     }
   }, [router]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'avatar') {
+          setEditAvatar(reader.result as string);
+        } else {
+          setEditCover(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = () => {
+    if (!user) return;
+    
+    const updatedUser = {
+      ...user,
+      name: editName,
+      bio: editBio,
+      location: editLocation,
+      website: editWebsite,
+      avatar: editAvatar,
+      cover: editCover
+    };
+    
+    localStorage.setItem('voice_user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    setIsEditModalOpen(false);
+    
+    toast({
+      title: "Profile Updated",
+      description: "Your changes have been saved successfully.",
+    });
+  };
 
   if (isLoading) return (
     <div className="h-screen w-full flex items-center justify-center bg-transparent relative z-50">
@@ -50,11 +143,11 @@ export default function ProfilePage() {
     </div>
   );
 
-  const coverImage = PlaceHolderImages.find(img => img.id === 'profile-cover')?.imageUrl || "https://picsum.photos/seed/cover/800/260";
+  const displayCover = user?.cover || PlaceHolderImages.find(img => img.id === 'profile-cover')?.imageUrl || "https://picsum.photos/seed/cover/800/260";
+  const isCreator = user?.handle === '@johndoe'; 
 
   return (
     <div className="bg-background dark:bg-[#0F0F0F] text-foreground min-h-screen">
-      {/* Mobile Top Navigation */}
       <div className="sm:hidden sticky top-0 bg-background/80 dark:bg-[#0F0F0F]/80 backdrop-blur-md z-50 border-b border-border dark:border-[#2F3336] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <button onClick={() => router.back()} className="p-1">
@@ -89,8 +182,6 @@ export default function ProfilePage() {
       </div>
 
       <div className="container mx-auto max-w-7xl h-screen flex">
-        
-        {/* Sidebar Navigation */}
         <header className="w-20 xl:w-64 h-full flex flex-col justify-between p-2 xl:px-4 xl:py-4 sticky top-0 border-r border-border dark:border-[#2F3336] overflow-y-auto hidden sm:flex z-50">
           <div className="flex flex-col items-center xl:items-start space-y-4 w-full">
             <Link href="/feed" className="p-3 mb-2 rounded-full hover:bg-primary/10 transition-colors cursor-pointer w-fit self-center xl:self-start">
@@ -120,9 +211,7 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        {/* Main Profile Content */}
         <main className="flex-1 max-w-2xl w-full border-r border-border dark:border-[#2F3336] min-h-screen overflow-y-auto no-scrollbar">
-          {/* Desktop Header */}
           <div className="sticky top-0 bg-background/80 dark:bg-[#0F0F0F]/80 backdrop-blur-md z-40 border-b border-border dark:border-[#2F3336] px-4 py-1 flex items-center gap-6 hidden sm:flex">
             <button onClick={() => router.back()} className="p-2 hover:bg-secondary rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5" />
@@ -133,15 +222,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Profile Visuals */}
           <div className="relative">
             <div className="h-32 sm:h-48 w-full bg-muted overflow-hidden">
-              <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+              <img src={displayCover} alt="Cover" className="w-full h-full object-cover" />
             </div>
             
-            <div className="px-4 relative">
+            <div className="px-4 relative pb-4">
               <div className="flex justify-between items-start">
-                {/* Avatar positioned partially overlapping the cover */}
                 <div className="relative -mt-12 sm:-mt-16 mb-2">
                   <div className="border-4 border-background rounded-full overflow-hidden w-24 h-24 sm:w-32 sm:h-32 bg-background shadow-sm">
                     <img src={user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -149,67 +236,140 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="flex gap-2 mt-3">
-                   <button className="border border-border hover:bg-secondary rounded-full p-2 h-fit">
+                   <button className="border border-border hover:bg-secondary rounded-full p-2 h-fit transition-colors">
                     <MoreHorizontal className="w-5 h-5" />
                   </button>
-                  <button className="border border-border hover:bg-secondary font-bold px-4 py-2 rounded-full text-sm transition-colors h-fit">
-                    Edit profile
-                  </button>
+                  
+                  <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                    <DialogTrigger asChild>
+                      <button className="border border-border hover:bg-secondary font-bold px-4 py-2 rounded-full text-sm transition-colors h-fit">
+                        Edit profile
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px] p-0 gap-0 border-none overflow-hidden max-h-[90vh] flex flex-col">
+                      <DialogHeader className="px-4 h-14 flex flex-row items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-10 border-none">
+                        <div className="flex items-center gap-6">
+                          <button onClick={() => setIsEditModalOpen(false)} className="p-1 hover:bg-secondary rounded-full transition-colors">
+                            <X className="w-5 h-5" />
+                          </button>
+                          <DialogTitle className="text-xl font-bold">Edit profile</DialogTitle>
+                        </div>
+                        <button 
+                          onClick={handleSaveProfile}
+                          className="bg-foreground text-background font-bold px-4 py-1.5 rounded-full text-sm hover:opacity-90 transition-opacity"
+                        >
+                          Save
+                        </button>
+                      </DialogHeader>
+                      
+                      <div className="overflow-y-auto flex-1 no-scrollbar">
+                        <input type="file" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, 'avatar')} accept="image/*" />
+                        <input type="file" className="hidden" ref={coverInputRef} onChange={(e) => handleImageUpload(e, 'cover')} accept="image/*" />
+
+                        <div className="relative h-48 w-full bg-muted">
+                          <img src={editCover} alt="Edit Cover" className="w-full h-full object-cover opacity-70" />
+                          <div className="absolute inset-0 flex items-center justify-center gap-4">
+                            <button onClick={() => coverInputRef.current?.click()} className="p-3 bg-black/50 text-white rounded-full hover:bg-black/40 transition-colors"><Camera className="w-6 h-6" /></button>
+                          </div>
+                        </div>
+
+                        <div className="px-4 relative">
+                          <div className="relative -mt-12 mb-4">
+                            <div className="border-4 border-background rounded-full overflow-hidden w-28 h-28 bg-muted relative group">
+                              <img src={editAvatar} alt="Edit Avatar" className="w-full h-full object-cover opacity-70" />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <button onClick={() => avatarInputRef.current?.click()} className="p-3 bg-black/50 text-white rounded-full hover:bg-black/40 transition-colors"><Camera className="w-6 h-6" /></button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-6 pb-8">
+                            <div className="space-y-1.5 px-1">
+                              <Label className="text-xs text-muted-foreground ml-2 font-bold uppercase tracking-wider">Name</Label>
+                              <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-14 bg-transparent border-border focus:ring-1 focus:ring-primary text-base px-4" />
+                            </div>
+                            <div className="space-y-1.5 px-1">
+                              <Label className="text-xs text-muted-foreground ml-2 font-bold uppercase tracking-wider">Bio</Label>
+                              <Textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} className="min-h-[100px] bg-transparent border-border focus:ring-1 focus:ring-primary text-base px-4 py-3 resize-none" />
+                            </div>
+                            <div className="space-y-1.5 px-1">
+                              <Label className="text-xs text-muted-foreground ml-2 font-bold uppercase tracking-wider">Location</Label>
+                              <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="h-14 bg-transparent border-border focus:ring-1 focus:ring-primary text-base px-4" />
+                            </div>
+                            <div className="space-y-1.5 px-1">
+                              <Label className="text-xs text-muted-foreground ml-2 font-bold uppercase tracking-wider">Website</Label>
+                              <Input value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} className="h-14 bg-transparent border-border focus:ring-1 focus:ring-primary text-base px-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 
-              {/* Profile Details */}
-              <div className="mt-1 space-y-3">
-                <div>
-                  <h1 className="text-xl font-black flex items-center gap-1">
+              <div className="mt-2 space-y-3">
+                <div className="flex flex-col">
+                  <h1 className="text-xl font-black flex items-center gap-1.5">
                     {user?.name}
-                    <i className="fas fa-check-circle text-primary text-sm"></i>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help flex items-center justify-center">
+                            {isCreator ? (
+                              <ScallopedBadge className="w-5 h-5" color="#FFD700" />
+                            ) : (
+                              <ScallopedBadge className="w-5 h-5" color="#5A55F2" />
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-background text-foreground border border-border p-4 rounded-xl shadow-2xl max-w-[280px]">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              {isCreator ? <ScallopedBadge className="w-5 h-5" color="#FFD700" /> : <ScallopedBadge className="w-5 h-5" color="#5A55F2" />}
+                              <p className="font-bold text-sm">{isCreator ? "Creator & Maintainer" : "Verified Account"}</p>
+                            </div>
+                            <p className="text-xs leading-relaxed opacity-80">
+                              {isCreator 
+                                ? "This account is the official Creator and Maintainer of VOICE. It holds high authority within the platform ecosystem." 
+                                : "This account is verified because it is notable in government, news, entertainment, or another designated category."}
+                            </p>
+                            <div className="h-px bg-border my-1" />
+                            <div className="flex items-center gap-1.5 text-xs opacity-60">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>Verified since {isCreator ? "June 2023" : "December 2021"}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </h1>
-                  <p className="text-muted-foreground text-sm leading-none">{user?.handle}</p>
+                  <p className="text-muted-foreground text-sm leading-none mt-0.5">{user?.handle}</p>
                 </div>
 
-                <p className="text-sm leading-normal">
-                  Digital product designer, tech enthusiast, and professional VOICEr. Building the future of social connection. 🚀
-                </p>
+                <p className="text-sm leading-normal mt-2">{user?.bio}</p>
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>San Francisco, CA</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <LinkIcon className="w-4 h-4" />
-                    <a href="#" className="text-primary hover:underline">voice.app/me</a>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>Joined June 2023</span>
-                  </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
+                  <div className="flex items-center gap-1"><MapPin className="w-4 h-4" /><span>{user?.location}</span></div>
+                  <div className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /><a href="#" className="text-primary hover:underline">{user?.website}</a></div>
+                  <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /><span>Joined June 2023</span></div>
                 </div>
 
-                <div className="flex gap-4 text-sm pt-1">
-                  <div className="flex gap-1 hover:underline cursor-pointer">
-                    <span className="font-bold">482</span>
-                    <span className="text-muted-foreground">Following</span>
-                  </div>
-                  <div className="flex gap-1 hover:underline cursor-pointer">
-                    <span className="font-bold">1.2K</span>
-                    <span className="text-muted-foreground">Followers</span>
-                  </div>
+                <div className="flex gap-4 text-sm pt-2">
+                  <Link href="/profile/following" className="flex gap-1 hover:underline cursor-pointer"><span className="font-bold">482</span><span className="text-muted-foreground">Following</span></Link>
+                  <Link href="/profile/followers" className="flex gap-1 hover:underline cursor-pointer"><span className="font-bold">1.2K</span><span className="text-muted-foreground">Followers</span></Link>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-border dark:border-[#2F3336] mt-4">
+          <div className="flex border-b border-border dark:border-[#2F3336]">
             <ProfileTab label="VOICEs" active={activeTab === 'posts'} onClick={() => setActiveTab('posts')} />
             <ProfileTab label="Replies" active={activeTab === 'replies'} onClick={() => setActiveTab('replies')} />
             <ProfileTab label="Media" active={activeTab === 'media'} onClick={() => setActiveTab('media')} />
             <ProfileTab label="Likes" active={activeTab === 'likes'} onClick={() => setActiveTab('likes')} />
           </div>
 
-          {/* Posts List */}
           <div className="pb-20">
             {dummyPosts.slice(0, 3).map(post => (
               <div key={post.id} className="p-4 border-b border-border hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors flex gap-3">
@@ -231,7 +391,6 @@ export default function ProfilePage() {
           </div>
         </main>
 
-        {/* Right Sidebar */}
         <aside className="w-[350px] hidden lg:block h-screen sticky top-0 px-6 py-4 space-y-4 overflow-y-auto no-scrollbar">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground group-focus-within:text-primary w-4 h-4" />
@@ -243,9 +402,9 @@ export default function ProfilePage() {
             {followSuggestions.map(person => (
               <div key={person.id} className="flex items-center justify-between px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
                 <div className="flex items-center gap-3">
-                  <img alt="Avatar" className="w-10 h-10 rounded-full object-cover" src={person.avatar} />
+                  <Link href={`/profile/${person.handle.replace('@', '')}`}><img alt="Avatar" className="w-10 h-10 rounded-full object-cover" src={person.avatar} /></Link>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-sm hover:underline truncate">{person.name}</span>
+                    <Link href={`/profile/${person.handle.replace('@', '')}`} className="font-bold text-sm hover:underline truncate">{person.name}</Link>
                     <span className="text-xs text-muted-foreground truncate">{person.handle}</span>
                   </div>
                 </div>

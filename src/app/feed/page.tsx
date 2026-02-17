@@ -24,12 +24,36 @@ import {
   Pin,
   X,
   Menu,
-  Settings
+  Settings,
+  BadgeCheck,
+  Loader2
 } from 'lucide-react';
 import { dummyPosts, trendingTopics, followSuggestions, type Post, appState } from '@/lib/dummy-data';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import InfiniteScroll from 'react-infinite-scroll-component';
+
+const ScallopedBadge = ({ className, color = "#5A55F2" }: { className?: string; color?: string }) => (
+  <svg viewBox="0 0 24 24" aria-label="Verified account" className={className}>
+    <g>
+      <path 
+        d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.28 2.52-.81 3.91c-1.31.67-2.19 1.91-2.19 3.34s.88 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.27 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z" 
+        fill={color}
+      />
+      <path 
+        d="M10.54 16.2l-3.53-3.53 1.06-1.06 2.47 2.47 6.13-6.13 1.06 1.06-7.19 7.19z" 
+        fill="white"
+      />
+    </g>
+  </svg>
+);
 
 export default function FeedPage() {
   const router = useRouter();
@@ -39,6 +63,10 @@ export default function FeedPage() {
   const [user, setUser] = useState<{ name: string; handle: string; avatar: string } | null>(null);
   const [postContent, setPostContent] = useState('');
   const [isLoading, setIsLoading] = useState(!appState.hasInitialLoaded);
+  
+  // Infinite Scroll State
+  const [posts, setPosts] = useState<Post[]>(dummyPosts.slice(0, 10));
+  const [hasMore, setHasMore] = useState(true);
   
   // Feature states
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -55,6 +83,19 @@ export default function FeedPage() {
       setIsLoading(false);
     }
   }, [router]);
+
+  const fetchMoreData = () => {
+    if (posts.length >= dummyPosts.length) {
+      setHasMore(false);
+      return;
+    }
+
+    // Simulate network delay
+    setTimeout(() => {
+      const nextBatch = dummyPosts.slice(posts.length, posts.length + 10);
+      setPosts(prev => [...prev, ...nextBatch]);
+    }, 1000);
+  };
 
   const handlePost = () => {
     if (!postContent.trim() && selectedImages.length === 0) return;
@@ -203,13 +244,15 @@ export default function FeedPage() {
         </header>
 
         {/* Main Feed */}
-        <main className="flex-1 max-w-2xl w-full border-r border-border dark:border-[#2F3336] min-h-screen overflow-y-auto no-scrollbar">
+        <main id="scrollableFeed" className="flex-1 max-w-2xl w-full border-r border-border dark:border-[#2F3336] min-h-screen overflow-y-auto no-scrollbar">
           <div className="sticky top-0 bg-background/80 dark:bg-[#0F0F0F]/80 backdrop-blur-md z-40 border-b border-border dark:border-[#2F3336] px-4 py-3 hidden sm:block">
             <h2 className="text-xl font-bold">Home</h2>
           </div>
 
           <div className="px-4 py-3 border-b border-border dark:border-[#2F3336] flex gap-4">
-            <img alt="Avatar" className="w-12 h-12 rounded-full object-cover" src={user?.avatar} />
+            <Link href="/profile" className="flex-shrink-0">
+              <img alt="Avatar" className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity" src={user?.avatar} />
+            </Link>
             <div className="flex-1 flex flex-col gap-3">
               <textarea 
                 className="w-full bg-transparent border-none focus:ring-0 text-xl placeholder-muted-foreground resize-none p-0 mt-2 outline-none" 
@@ -279,11 +322,28 @@ export default function FeedPage() {
             </div>
           </div>
 
-          <div className="pb-20">
-            {dummyPosts.map(post => (
-              <FeedItem key={post.id} post={post} />
-            ))}
-          </div>
+          <InfiniteScroll
+            dataLength={posts.length}
+            next={fetchMoreData}
+            hasMore={hasMore}
+            loader={
+              <div className="p-8 flex justify-center items-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+            }
+            endMessage={
+              <div className="p-8 text-center text-muted-foreground font-medium">
+                You've reached the end of the universe! ✨
+              </div>
+            }
+            scrollableTarget="scrollableFeed"
+          >
+            <div className="pb-20">
+              {posts.map(post => (
+                <FeedItem key={post.id} post={post} currentUserHandle={user?.handle} />
+              ))}
+            </div>
+          </InfiniteScroll>
         </main>
 
         {/* Right Sidebar */}
@@ -312,9 +372,11 @@ export default function FeedPage() {
             {followSuggestions.map(person => (
               <div key={person.id} className="flex items-center justify-between px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
                 <div className="flex items-center gap-3">
-                  <img alt="Avatar" className="w-10 h-10 rounded-full object-cover" src={person.avatar} />
+                  <Link href={`/profile/${person.handle.replace('@', '')}`} className="flex-shrink-0">
+                    <img alt="Avatar" className="w-10 h-10 rounded-full object-cover hover:opacity-90 transition-opacity" src={person.avatar} />
+                  </Link>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-sm hover:underline truncate">{person.name}</span>
+                    <Link href={`/profile/${person.handle.replace('@', '')}`} className="font-bold text-sm hover:underline truncate">{person.name}</Link>
                     <span className="text-xs text-muted-foreground truncate">{person.handle}</span>
                   </div>
                 </div>
@@ -351,7 +413,10 @@ function IconButton({ icon: Icon, onClick, title, active = false }: { icon: any,
   );
 }
 
-function FeedItem({ post }: { post: Post }) {
+function FeedItem({ post, currentUserHandle }: { post: Post, currentUserHandle?: string }) {
+  const isMe = currentUserHandle === post.user.handle || post.user.handle === '@johndoe';
+  const profileHref = isMe ? '/profile' : `/profile/${post.user.handle.replace('@', '')}`;
+
   return (
     <article className="border-b border-border dark:border-[#2F3336] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative group">
       <Link href={`/post/${post.id}`} className="absolute inset-0 z-0" />
@@ -363,22 +428,60 @@ function FeedItem({ post }: { post: Post }) {
           </div>
         )}
         <div className="flex gap-4">
-          <div className="flex-shrink-0 avatar-link pointer-events-auto">
-            <img alt="Avatar" className="w-12 h-12 rounded-full object-cover" src={post.user.avatar} />
-          </div>
+          <Link 
+            href={profileHref} 
+            className="flex-shrink-0 avatar-link pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img alt="Avatar" className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity" src={post.user.avatar} />
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-1 min-w-0">
-                <span className="font-bold hover:underline truncate pointer-events-auto">{post.user.name}</span>
+                <Link 
+                  href={profileHref} 
+                  className="font-bold hover:underline truncate pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {post.user.name}
+                </Link>
                 {post.user.verified && (
-                  <span className="ml-1 text-primary">
-                    <i className="fas fa-check-circle text-xs"></i>
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-1 pointer-events-auto cursor-help">
+                          {isMe ? (
+                            <ScallopedBadge className="w-3.5 h-3.5" color="#FFD700" />
+                          ) : (
+                            <ScallopedBadge className="w-3.5 h-3.5" color="#5A55F2" />
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-background text-foreground border border-border p-4 rounded-xl shadow-2xl max-w-[280px]">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            {isMe ? <ScallopedBadge className="w-5 h-5" color="#FFD700" /> : <ScallopedBadge className="w-5 h-5" color="#5A55F2" />}
+                            <p className="font-bold text-sm">{isMe ? "Creator & Maintainer" : "Verified Account"}</p>
+                          </div>
+                          <p className="text-xs leading-relaxed opacity-80">
+                            {isMe 
+                              ? "This account is the official Creator and Maintainer of VOICE. It holds high authority within the platform ecosystem." 
+                              : "This account is verified because it is notable in government, news, entertainment, or another designated category."}
+                          </p>
+                          <div className="h-px bg-border my-1" />
+                          <div className="flex items-center gap-1.5 text-xs opacity-60">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Verified since {isMe ? "June 2023" : "December 2021"}</span>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 <span className="text-muted-foreground text-sm truncate">{post.user.handle}</span>
                 <span className="text-muted-foreground text-sm flex-shrink-0">· {post.timestamp}</span>
               </div>
-              <button className="text-muted-foreground hover:text-primary rounded-full p-1 pointer-events-auto">
+              <button className="text-muted-foreground hover:text-primary rounded-full p-1 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>

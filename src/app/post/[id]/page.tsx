@@ -22,7 +22,8 @@ import {
   Settings,
   Image as ImageIcon,
   Smile,
-  Bookmark
+  Bookmark,
+  BadgeCheck
 } from 'lucide-react';
 import { dummyPosts, trendingTopics, followSuggestions, type Post, appState } from '@/lib/dummy-data';
 import { SidebarLink } from '@/app/feed/page';
@@ -68,6 +69,9 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
       </Link>
     </div>
   );
+
+  const isMe = currentUser?.handle === post.user.handle;
+  const postUserHref = isMe ? '/profile' : `/profile/${post.user.handle.replace('@', '')}`;
 
   return (
     <div className="bg-background dark:bg-[#0F0F0F] text-foreground min-h-screen">
@@ -132,9 +136,11 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="flex items-center justify-center xl:justify-between p-3 rounded-full hover:bg-secondary dark:hover:bg-[#16181C] transition-colors cursor-pointer w-fit xl:w-full mt-4 mx-auto xl:mx-0">
             <div className="flex items-center gap-3">
-              <img alt="User" className="w-10 h-10 rounded-full object-cover border border-border" src={currentUser?.avatar} />
+              <Link href="/profile" className="flex-shrink-0">
+                <img alt="User" className="w-10 h-10 rounded-full object-cover border border-border hover:opacity-90 transition-opacity" src={currentUser?.avatar} />
+              </Link>
               <div className="hidden xl:flex flex-col leading-tight overflow-hidden">
-                <span className="font-bold text-sm truncate">{currentUser?.name}</span>
+                <Link href="/profile" className="font-bold text-sm truncate hover:underline">{currentUser?.name}</Link>
                 <span className="text-muted-foreground text-sm truncate">{currentUser?.handle}</span>
               </div>
             </div>
@@ -154,13 +160,15 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
           <article className="p-4 space-y-4">
             <div className="flex justify-between items-start">
               <div className="flex gap-3">
-                <img alt="Avatar" className="w-12 h-12 rounded-full object-cover" src={post.user.avatar} />
+                <Link href={postUserHref}>
+                  <img alt="Avatar" className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity" src={post.user.avatar} />
+                </Link>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1">
-                    <span className="font-bold hover:underline cursor-pointer">{post.user.name}</span>
+                    <Link href={postUserHref} className="font-bold hover:underline cursor-pointer">{post.user.name}</Link>
                     {post.user.verified && (
                       <span className="text-primary">
-                        <i className="fas fa-check-circle text-xs"></i>
+                        <BadgeCheck className="w-4 h-4 fill-current" />
                       </span>
                     )}
                   </div>
@@ -220,7 +228,9 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
 
             {/* Reply Input */}
             <div className="flex gap-4 py-3">
-              <img alt="Avatar" className="w-10 h-10 rounded-full object-cover" src={currentUser?.avatar} />
+              <Link href="/profile" className="flex-shrink-0">
+                <img alt="Avatar" className="w-10 h-10 rounded-full object-cover hover:opacity-90 transition-opacity" src={currentUser?.avatar} />
+              </Link>
               <div className="flex-1">
                 <textarea 
                   className="w-full bg-transparent border-none focus:ring-0 text-lg placeholder-muted-foreground resize-none p-0 mt-1 outline-none" 
@@ -260,9 +270,11 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
             <h3 className="font-extrabold text-xl px-4 mb-3">Relevant people</h3>
             <div className="flex items-center justify-between px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
               <div className="flex items-center gap-3">
-                <img alt="Avatar" className="w-10 h-10 rounded-full object-cover" src={post.user.avatar} />
+                <Link href={postUserHref}>
+                  <img alt="Avatar" className="w-10 h-10 rounded-full object-cover hover:opacity-90 transition-opacity" src={post.user.avatar} />
+                </Link>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-sm hover:underline truncate">{post.user.name}</span>
+                  <Link href={postUserHref} className="font-bold text-sm hover:underline truncate">{post.user.name}</Link>
                   <span className="text-xs text-muted-foreground truncate">{post.user.handle}</span>
                 </div>
               </div>
